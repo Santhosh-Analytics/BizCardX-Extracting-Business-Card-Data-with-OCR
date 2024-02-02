@@ -3,8 +3,8 @@ A user-friendly application to digitize business card data using OCR and manage 
 
 
 ## Table of Contents
-•	Overview: #overview
-•	Prerequisites: #prerequisites
+•	[Overview](#overview)
+•	[Prerequisites](#prerequisites)
 •	Usage: #usage
 •	Technical Details: #technical-details
 •	Demo/Presentation Video: #demopresentation-video
