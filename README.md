@@ -7,10 +7,9 @@
 - [Overview](#overview)
 - [Problem Statement](#problem-statement)
 - [Prerequisites](#prerequisites)
-- [Testing the Application Locally](#testing)
-- [Technical Details](#technical-details)
+- [Testing the Application Locally](#testing-the-application-locally)
 - [Demo/Presentation Video](#demopresentation-video)
-- [Contribution](#contribution)
+- [Conclusion](#conclusion)
 - [Contact](#contact)
 
 
@@ -39,7 +38,7 @@ Develop a Streamlit application that allows users to upload a business card imag
 Before you begin, ensure you have met the following requirements:
 
 - Python: Version 3.11.0 or higher. [Download Python](https://www.python.org/downloads/)
-- Streamlit, easyOCR: Install using pip:
+- Required packages : `Streamlit, easyOCR: Install using pip`
 - Database Management System: SQLite or MySQL. [SQLite Installation Guide](https://www.sqlite.org/download.html) | [MySQL Installation Guide](https://dev.mysql.com/doc/mysql-installation-excerpt/8.0/en/)
 - Git: Version control tool. [Download Git](https://git-scm.com/downloads)
 - Install dependencies: `pip install -r requirements.txt`
@@ -50,6 +49,9 @@ Before you begin, ensure you have met the following requirements:
 3. Install dependencies: `pip install -r requirements.txt`
 5. Run the application: `streamlit run app.py`
 6. Ensure you use your SQL credentials.
+
+## Demo/Presentation Video:
+
 
 ## Contact
 If you have any questions or feedback, feel free to reach out at [email](mailto:santhosh90612@gmail.com).
