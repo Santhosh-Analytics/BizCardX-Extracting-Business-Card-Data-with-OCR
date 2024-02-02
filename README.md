@@ -1,4 +1,4 @@
-# <div align="center"style="color: #007acc;"> Business Card OCR and Database Integration with Streamlit Project</div>
+# <div align="center"> Business Card OCR and Database Integration with Streamlit Project</div>
 <div align="center"> A user-friendly application to digitize business card data using OCR and manage it in a database.</div>
 
 
