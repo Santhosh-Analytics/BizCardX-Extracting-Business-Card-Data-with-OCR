@@ -53,11 +53,17 @@ Before you begin, ensure you have met the following requirements:
 - Install dependencies: `pip install -r requirements.txt`
 
 ## Testing the Application Locally:
-1. Clone the repository: `git clone https://github.com/yourusername/your-repo.git`
-2. Navigate to the project directory: `cd your-repo`
+To clone and run this application, you'll need [![Git Badge](https://img.shields.io/badge/Git-red?style=flat-square&logo=git&logoColor=%23F05032&label=Install)](https://git-scm.com/) installed on your computer. 
+
+1. Clone the repository: `git clone https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR`
+2. Navigate to the project directory: `cd BizCardX-Extracting-Business-Card-Data-with-OCR`
 3. Install dependencies: `pip install -r requirements.txt`
-5. Run the application: `streamlit run app.py`
-6. Ensure you use your SQL credentials.
+5. Run the application: `streamlit run BizCard_main.py`
+6. Ensure you use your SQL user credentials.
+
+From your command line:
+![Project Logo](https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR/raw/main/Require.png)
+
 
 ## Demo/Presentation Video:
 
