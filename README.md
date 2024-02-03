@@ -1,5 +1,5 @@
 <div align="center">
-    <img alt="Static Badge" src="https://img.shields.io/badge/BizCardX-Project-red?style=for-the-badge&logo=Python&logoColor=%233776AB">
+    <img alt="Static Badge" src="https://img.shields.io/badge/BizCardX-easyOCR-red?style=for-the-badge&logo=Python&logoColor=%233776AB">
 
 </div>
 
@@ -55,14 +55,22 @@ Before you begin, ensure you have met the following requirements:
 ## Testing the Application Locally:
 To clone and run this application, you'll need [![Git Badge](https://img.shields.io/badge/Git-red?style=flat-square&logo=git&logoColor=%23F05032&label=Install)](https://git-scm.com/) installed on your computer. 
 
-1. Clone the repository: `git clone https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR`
-2. Navigate to the project directory: `cd BizCardX-Extracting-Business-Card-Data-with-OCR`
-3. Install dependencies: `pip install -r requirements.txt`
-5. Run the application: `streamlit run BizCard_main.py`
-6. Ensure you use your SQL user credentials.
+1. Clone the repository:
 
-From your command line:
-![Project Logo](https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR/raw/main/Require.png)
+      ``` bash
+        git clone https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR
+
+3. Navigate to the project directory:
+    ``` bash
+    cd BizCardX-Extracting-Business-Card-Data-with-OCR
+5. Install dependencies:
+      ``` bash
+    pip install -r requirements.txt
+      
+7. Run the application:
+     ``` bash
+    streamlit run BizCard_main.py
+10. Ensure you use your SQL user credentials.
 
 
 ## Demo/Presentation Video:
