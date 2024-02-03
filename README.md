@@ -70,7 +70,7 @@ To clone and run this application, you'll need [![Git Badge](https://img.shields
 7. Run the application:
      ``` bash
     streamlit run BizCard_main.py
-10. Ensure you use your SQL user credentials.
+10. **Ensure you use your SQL user credentials in the** [SQL Root Config file](https://github.com/Santhosh-Analytics/BizCardX-Extracting-Business-Card-Data-with-OCR/blob/main/SQL_root_config.py).
 
 
 ## Demo/Presentation Video:
