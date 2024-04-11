@@ -1,2 +1,2 @@
 # config.py
-PASSWORD = "Your SQL user password"
+PASSWORD = "Datascience@24"
