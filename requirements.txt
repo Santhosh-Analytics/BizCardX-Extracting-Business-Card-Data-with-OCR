@@ -1,5 +1,5 @@
 image==1.5.33
-OpenGL
+opencv-python-headless
 filetype
 regex
 sqlparse
@@ -24,7 +24,6 @@ streamlit-pandas-profiling==0.1.3
 streamlit-player==0.1.5
 streamlit-toggle-switch==1.0.2
 streamlit-vertical-slider==1.0.2
-opencv-python
 image
 pandas==2.0.0
 
