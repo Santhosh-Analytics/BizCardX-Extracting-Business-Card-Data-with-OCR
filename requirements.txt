@@ -9,10 +9,7 @@ mysql-connector
 mysql-connector-python
 easyocr
 streamlit
-streamlit-camera-input-live==0.2.0
 streamlit-card==0.0.61
-streamlit-embedcode==0.1.2
-streamlit_pandas
 streamlit-extras==0.3.4
 streamlit-faker==0.0.3
 streamlit-icon-component==0.0.2
