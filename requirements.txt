@@ -1,8 +1,5 @@
 image==1.5.33
-ImageHash==4.3.1
 filetype
-libgl1
-imageio==2.33.1
 regex
 sqlparse
 SQLAlchemy
@@ -29,4 +26,6 @@ streamlit-toggle-switch==1.0.2
 streamlit-vertical-slider==1.0.2
 opencv-python
 image
-pandas
+pandas==2.0.0
+--upgrade easyocr
+
