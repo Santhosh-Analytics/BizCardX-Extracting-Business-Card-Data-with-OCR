@@ -26,5 +26,4 @@ streamlit-vertical-slider==1.0.2
 opencv-python
 image
 pandas==2.0.0
---upgrade easyocr
 
