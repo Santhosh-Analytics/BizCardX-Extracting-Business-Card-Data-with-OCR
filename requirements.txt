@@ -1,4 +1,3 @@
-IO	
 image==1.5.33
 ImageHash==4.3.1
 filetype
