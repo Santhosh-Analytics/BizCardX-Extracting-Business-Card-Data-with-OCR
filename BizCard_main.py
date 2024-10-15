@@ -6,10 +6,10 @@ from streamlit_option_menu import option_menu
 import os
 import tempfile
 import cv2
+from dotenv import load_dotenv
 from PIL import Image
-import mysql.connector 
-from SQL_root_config import PASSWORD
-from mysql.connector import Error
+import pymysql
+from pymysql import Error
 import re
 import pandas as pd
 import streamlit_pandas as sp
@@ -32,21 +32,32 @@ st.set_page_config(
     page_icon=image,
 )
 
+page_bg_img = '''
+<style>
+    .stApp {
+        background-image:url("https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperset.com%2Fw%2Ffull%2Fc%2F4%2F2%2F2932.jpg&f=1&nofb=1&ipt=167b8ede7fb9039711212e5ae543004922bc451239b539ed9d447699ccab439d&ipo=images")
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+</style> 
+'''
+
 # Adding effects to the Streamlit button using CSS
 st.markdown("""
 <style>
 .stButton button {
     background-color: #3498db !important;
-    color: #ffffff;
+    color: #ffffff !important;
     font:verdana !important;
-    font-size: 20px;
-    height: 2.5em;
-    width: 15em;
-    border-radius: 10px;
-    transition: background-color 0.3s ease;
+    font-size: 20px !important;
+    height: 2.5em !important;
+    width: 10em !important;
+    border-radius: 15px !important;
+    transition: background-color 0.3s ease !important;
 }
 .stButton button:hover {
-    background-color: #3498db !important;
+    background-color: darkgreen !important;
     font:verdana !important;
     color: #ffffff !important;
 }
@@ -59,7 +70,7 @@ st.markdown("""
 }
 
 .stButton button:focus:active {
-    background-color: #0066cc !important;
+    background-color: darkgreen !important;
     border-color: #ffffff !important;
     box-shadow: none !important;
     color: #ffffff !important;
@@ -86,61 +97,81 @@ with st.sidebar:
     # Option menu for the main menu
     selected = option_menu("Main Menu", ["Home", 'Card Reader','Data Hub',], 
         icons=['house-door-fill', 'cloud-upload ','pencil-square'], menu_icon="cast", default_index=0,styles={
-        "container": {"padding": "0!important", "background-color": "#f7786b"},
-        "icon": {"color": "rgb(235, 48, 84)", "font-size": "25px"}, 
+        "container": {"padding": "12!important", "background-color": "Teal"},
+        "icon": {"color": "rgb(235, 48, 84)", "font-size": "25px","font-family": "JetBrainsMono Nerd Font",}, 
         "nav-link": {"font-size": "22px", "color": "#ffffff","text-align": "left", "margin":"0px", "--hover-color": "#84706E"},
-        "nav-link-selected": {"background-color": "#84706E  ","color": "white","font-size": "20px"},
+        "nav-link-selected": {"background-color": "darkgreen","color": "white","font-size": "20px"},
     })
+    
+    st.markdown("<hr style='border: 2px solid #5f1f9c;'>", unsafe_allow_html=True)
     
 # Defining functions
 
+load_dotenv()
 
+db_user = os.getenv('DB_USERNAME')
+db_password = os.getenv('DB_PASSWORD')
+db_host = os.getenv('DB_HOST', 'localhost')
+db_port = os.getenv('DB_PORT', '3306')
+db_name = 'bizcardx'
 # function to create table and database if not exists 
 def create_db_table():
-  try:
-    mydb = mysql.connector.connect(
-      host='localhost',
-      user='root',
-      password=PASSWORD,
-      database='bizcardx'
-      )
-    mycur = mydb.cursor()
-    mycur.execute("CREATE DATABASE IF NOT EXISTS bizcardx")
-    mycur.execute("use bizcardx")
-
-    mycur.execute('''CREATE TABLE IF NOT EXISTS card_data      
-              (id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                company_name TEXT ,
-                card_holder TEXT ,
+    try:
+        mydb = pymysql.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        
+        with mydb.cursor() as mycur:
+            # Create the database if it doesn't exist
+            create_db_sql = f"CREATE DATABASE IF NOT EXISTS {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            mycur.execute(create_db_sql)
+            
+            use_db_sql = f"USE {db_name}"
+            mycur.execute(use_db_sql)
+            
+            # Create the table
+            create_table_sql = '''CREATE TABLE IF NOT EXISTS card_data (
+                id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                company_name TEXT,
+                card_holder TEXT,
                 designation TEXT,
                 mobile_number VARCHAR(50),
-                email  VARCHAR(255) UNIQUE,  
+                email VARCHAR(255) UNIQUE,
                 website TEXT,
                 area TEXT,
                 city TEXT,
                 state TEXT,
                 pin_code VARCHAR(10),
                 image LONGBLOB
-                )''')
-    mydb.commit()
-    return mydb
-  except Error as e:
-    st.error(f"The error '{e}' occurred")
-    return None
+            ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'''
+            mycur.execute(create_table_sql)
+            
+        mydb.commit()
+        return mydb
+    except Error as e:
+        st.error(f"The error '{e}' occurred")
+        print(f"Full error details: {str(e)}")
+        return None
 
 # function to upload processed data to SQL database
-def query_db(mydb,query,data):
+def query_db(mydb, query, data):
+    if mydb is None:
+        st.error("Database connection was not established.")
+        return
 
-  data_to_insert = tuple(data.iloc[0])
-  try:
-    with mydb.cursor( ) as cur:
-      cur.execute(query,data_to_insert)
-      mydb.commit()
-    
-  except Error as e:
-    st.error(f"The error '{e}' occurred")
-  finally:
-    mydb.close()
+    data_to_insert = tuple(data.iloc[0])
+    try:
+        with mydb.cursor() as cur:
+            cur.execute(query, data_to_insert)
+            mydb.commit()
+    except Error as e:
+        st.error(f"The error '{e}' occurred, q_db")
+    finally:
+        mydb.close()
   
 #function to convert image to binary file
 def img_to_bin(file):
@@ -239,11 +270,11 @@ def image_preview(image,res):
 # Pulling data from MySQL DB
 def get_data_sql():
   try:
-    with  mysql.connector.connect(
-      host='localhost',
-      user='root',
-      password=PASSWORD,
-      database='bizcardx'
+    with  pymysql.connect(
+      host=db_host,
+      user=db_user,
+      password=db_password,
+      database=db_name
       ) as mydb:
       mycur = mydb.cursor()
       mycur.execute("select * from card_data")
@@ -257,7 +288,7 @@ def get_data_sql():
         st.write("No data found in the 'card_data' table.")
 
   except Error as e:
-     st.write(e)
+     st.write(e,'get')
 
 # def get_data_sql():
 #   try:
@@ -283,12 +314,11 @@ def get_data_sql():
 
 # getting selected record data from SQL
 def sql_df():
-  mydb=  mysql.connector.connect(host='localhost',user='root',password=PASSWORD,database='bizcardx') 
-  mycur = mydb.cursor()
-  mycur.execute("select Card_Holder,id  from card_data")
-  resu=mycur.fetchall()
-  return resu,mycur,mydb
-
+    mydb = pymysql.connect(host=db_host, user=db_user, password=db_password, database=db_name)
+    mycur = mydb.cursor()
+    mycur.execute("SELECT Card_Holder, id FROM card_data")
+    resu = mycur.fetchall()
+    return resu, mycur, mydb
 
 
 if selected == "Home":
@@ -341,7 +371,7 @@ if selected == "Card Reader":
 
     with view_col:
        with st.spinner('Wait for loading  your image...'):
-        st.set_option('deprecation.showPyplotGlobalUse', False)
+        # st.set_option('deprecation.showPyplotGlobalUse', False)
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
         temp_file.write(uploaded_card.read())
         uploaded_card_path = temp_file.name
@@ -427,16 +457,22 @@ if selected == "Card Reader":
                designation=VALUES(designation), mobile_number=VALUES(mobile_number),
                website=VALUES(website), area=VALUES(area),
                city=VALUES(city), state=VALUES(state), pin_code=VALUES(pin_code), image=VALUES(image)"""  
-          query_db(create_db_table(),query,df)
+               
+          db = create_db_table()
+          query_db(db,query,df)
+          st.success('Data sent to MySQL')
         except Error as e:
            st.error(f'correct the error {e}')
-        finally:
-           st.success('Data sent to MySQL')
+           
            
 
-
-
-
+def run_functions():
+    # Reload the data from the database
+    df = get_data_sql()
+    # Update the displayed dataframe with the latest data
+    st.dataframe(df, hide_index=True)
+    
+df = None
 if selected == "Data Hub":
 
 
@@ -489,10 +525,10 @@ if selected == "Data Hub":
        n+=1
 
     col1.write(' ')
-    save_button=col1.button('Commit changes',use_container_width=True,key='save_button', help="save_button",on_click=sql_df)
+    save_button=col1.button('Commit changes',use_container_width=True,key='save_button', help="save_button",on_click=run_functions)
     col2.write(' ')
     
-    del_button=col2.button(f"Delete {select_name}'s record",use_container_width=True,on_click=sql_df)
+    del_button=col2.button(f"Delete {select_name}'s record",use_container_width=True,on_click=run_functions)
     image_data=resu1[11]
     
     st.write('Image')
@@ -521,22 +557,25 @@ if selected == "Data Hub":
       try:
          mycur.execute(update_query,tuple(input_values +[select_name]))
          mydb.commit()
+         run_functions()
       except Error as e:
          st.warning(e)
       finally:
          b.write(' ')
          b.success(f"Changes committed to {select_name}'s record  successfully!")
+         run_functions()
     if del_button:
       try:
          mycur.execute(f""" Delete from card_data where card_holder ='{select_name}' """)
          mydb.commit()
          mycur.fetchall()
+         run_functions()
       except Error as e:
          st.warning(e)
       finally:
-         b.write(' ')
-         b.success(f"{select_name}'s record has been removed from the database.")
-
+          b.write(' ')
+          b.success(f"{select_name}'s record has been removed from the database.")
+          run_functions()
 
 
 
