@@ -1,7 +1,7 @@
 # Use Miniconda as the base image
 FROM continuumio/miniconda3
 
-# Install Mamba (faster than conda)
+# Install Mamba for faster package management
 RUN conda install -n base -c conda-forge mamba
 
 # Set the working directory inside the Docker container
@@ -13,11 +13,18 @@ COPY environment.yaml .
 # Create the Conda environment using Mamba
 RUN mamba env create -f environment.yaml
 
-# Activate the Conda environment and set the default environment to your new environment
-SHELL ["conda", "run", "-n", "pp", "/bin/bash", "-c"]
+# Activate the Conda environment and ensure it remains active for subsequent commands
+# Add the Conda environment to PATH for easier access to the environment's Python packages
+ENV PATH /opt/conda/envs/BC/bin:$PATH
 
-# Ensure that the environment is activated when running commands
-ENV PATH /opt/conda/envs/pp/bin:$PATH
+# Set the default shell to use the conda environment for all following commands
+SHELL ["conda", "run", "-n", "BC", "/bin/bash", "-c"]
+
+# Copy the requirements.txt file if it exists (handle the case where both Conda and pip are needed)
+# COPY requirements.txt .
+
+# Install additional pip dependencies if the requirements.txt file is present
+# RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
 # Check if Streamlit is installed in the activated environment
 RUN streamlit --version
@@ -29,4 +36,4 @@ COPY . .
 EXPOSE 8501
 
 # Set the entry point to run your Streamlit app
-CMD ["streamlit", "run", "Main_mod.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+CMD ["streamlit", "run", "BizCard_main.py", "--server.port", "8501", "--server.address", "0.0.0.0"]

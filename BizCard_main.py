@@ -200,6 +200,8 @@ def main_menu():
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '3306')
     db_name = 'bizcardx'
+
+
     # function to create table and database if not exists 
     def create_db_table():
         try:
@@ -226,7 +228,7 @@ def main_menu():
                     card_holder TEXT,
                     designation TEXT,
                     mobile_number VARCHAR(50),
-                    email VARCHAR(255) UNIQUE,
+                    email VARCHAR(255),
                     website TEXT,
                     area TEXT,
                     city TEXT,
@@ -243,26 +245,114 @@ def main_menu():
             print(f"Full error details: {str(e)}")
             return None
 
+    def compare_records(existing_record, new_record):
+        """Compare two records and return True if they are different"""
+        fields_to_compare = [
+            'company_name', 'card_holder', 'designation', 'mobile_number',
+            'website', 'area', 'city', 'state', 'pin_code'
+        ]
+        
+        for field in fields_to_compare:
+            if str(existing_record.get(field)) != str(new_record.get(field)):
+                return True
+        return False
+
+    def process_record(db, row):
+        """Process a single record - check if it exists and handle accordingly"""
+        try:
+            with db.cursor() as cur:
+                # First, check if a record with this email exists
+                check_query = """SELECT * FROM card_data WHERE email = %s"""
+                cur.execute(check_query, (row['email'],))
+                existing_record = cur.fetchone()
+                
+                if existing_record:
+                    # Convert row to dict for comparison
+                    new_record = {
+                        'company_name': row['company_name'],
+                        'card_holder': row['card_holder'],
+                        'designation': row['designation'],
+                        'mobile_number': row['mobile_number'],
+                        'website': row['website'],
+                        'area': row['area'],
+                        'city': row['city'],
+                        'state': row['state'],
+                        'pin_code': row['pin_code']
+                    }
+                    
+                    # Check if any fields are different
+                    if compare_records(existing_record, new_record):
+                        # Update the existing record
+                        update_query = """UPDATE card_data 
+                            SET company_name=%s, card_holder=%s, designation=%s, 
+                                mobile_number=%s, website=%s, area=%s, city=%s, 
+                                state=%s, pin_code=%s, image=%s
+                            WHERE email=%s"""
+                        update_data = (
+                            row['company_name'], row['card_holder'], row['designation'],
+                            row['mobile_number'], row['website'], row['area'],
+                            row['city'], row['state'], row['pin_code'], row['image'],
+                            row['email']
+                        )
+                        cur.execute(update_query, update_data)
+                        db.commit()
+                        return "updated"
+                    else:
+                        return "unchanged"
+                else:
+                    # Insert new record
+                    insert_query = """INSERT INTO card_data(
+                        company_name, card_holder, designation, mobile_number, 
+                        email, website, area, city, state, pin_code, image
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                    insert_data = (
+                        row['company_name'], row['card_holder'], row['designation'],
+                        row['mobile_number'], row['email'], row['website'],
+                        row['area'], row['city'], row['state'], row['pin_code'],
+                        row['image']
+                    )
+                    cur.execute(insert_query, insert_data)
+                    db.commit()
+                    return "inserted"
+        except Error as e:
+            st.error(f"Error processing record: {e}")
+            return "error"
+
+   
+
+
+
     # function to upload processed data to SQL database
     def query_db(mydb, query, data):
         if mydb is None:
             st.error("Database connection was not established.")
-            return
-        
+            return False  # Return a status indicating failure
+
         try:
             with mydb.cursor() as cur:
-                # Loop through the DataFrame rows
-                for i in range(data.shape[0]):
-                    data_to_insert = tuple(data.iloc[i])
-                    cur.execute(query, data_to_insert)
-                
-                # Commit all the changes once
-                mydb.commit()
+                # Check if the input data is a DataFrame
+                if isinstance(data, pd.DataFrame):
+                    # Loop through the DataFrame rows
+                    for i in range(data.shape[0]):
+                        data_to_insert = tuple(data.iloc[i])
+                        cur.execute(query, data_to_insert)
+                elif isinstance(data, list):
+                    # If data is a list, loop through each record
+                    for record in data:
+                        data_to_insert = tuple(record)
+                        cur.execute(query, data_to_insert)
+                else:
+                    st.error("Unsupported data format. Please provide a DataFrame or list.")
+                    return False  # Return a status indicating failure
+
+            # Commit all the changes once
+            mydb.commit()
+            return True  # Return a status indicating success
         except Error as e:
             st.error(f"An error occurred while inserting data: {e}")
-        finally:
-            mydb.close()
-    
+            return False  # Return a status indicating failure
+        
+                    
     #function to convert image to binary file
     def img_to_bin(file):
         with open(file,'rb') as file:
@@ -560,8 +650,8 @@ def main_menu():
             df=pd.DataFrame(all_data)
                 
 
-            df_display = df.rename(columns={'company_name': 'Company_Name'})
-            df_display = df_display.reset_index(drop=True)
+            # df_display = df.rename(columns={'company_name': 'Company_Name'})
+            df_display = df.reset_index(drop=True)
 
             with st.container():
                 st.dataframe(df_display,height=df_display.shape[0] * 55,hide_index=True,use_container_width = True)
@@ -571,26 +661,61 @@ def main_menu():
 
             temp_file.close()
             os.remove(temp_file.name)
-           
+            
+            df_display['mobile_number'] = df_display['mobile_number'].apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
+          
 
             dd=st.button('Push to MySQL database')
-
+            
             if dd:
                 try:
-                    query="""INSERT  INTO card_data(company_name,card_holder,designation,mobile_number,email,website,area,city,state,pin_code,image)
-                                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE 
-                    company_name=VALUES(company_name), card_holder=VALUES(card_holder),
-                    designation=VALUES(designation), mobile_number=VALUES(mobile_number),
-                    website=VALUES(website), area=VALUES(area),
-                    city=VALUES(city), state=VALUES(state), pin_code=VALUES(pin_code), image=VALUES(image)"""  
-                    
                     db = create_db_table()
                     
-                        
-                    query_db(db,query,df_display)
-                    st.success('Data sent to MySQL')
+                    if db is not None:
+                        for _, row in df_display.iterrows():
+                            result = process_record(db, row)
+                            if result == "inserted":
+                                st.success('New record added to database')
+                            elif result == "updated":
+                                st.success('Existing record updated with new information')
+                            elif result == "unchanged":
+                                st.info('Record already exists and no changes detected')
+                            else:
+                                st.error('Error processing record')
+                                
                 except Error as e:
-                    st.error(f'correct the error {str(e)}')
+                    st.error(f'Error: {str(e)}')
+
+            # if dd:
+            #     try:
+            #         check_query = """SELECT * FROM card_data WHERE email=%s"""
+
+                         
+            #         insert_query = """INSERT INTO card_data(company_name, card_holder, designation, mobile_number, email, website, 
+            #                area, city, state, pin_code, image) 
+            #                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+            #                ON DUPLICATE KEY UPDATE 
+            #                company_name=VALUES(company_name), card_holder=VALUES(card_holder),
+            #                designation=VALUES(designation), mobile_number=VALUES(mobile_number),
+            #                website=VALUES(website), area=VALUES(area),
+            #                city=VALUES(city), state=VALUES(state), pin_code=VALUES(pin_code), image=VALUES(image)"""
+
+
+            #         db = create_db_table()
+                    
+            #         if db is not None:
+            #             for _, row in df_display.iterrows():
+            #                 record_exists = query_db(db, check_query, [row['email']])
+        
+                    
+            #                 if not record_exists:
+            #                     query_db(db, insert_query, row)
+            #                     st.success('Data sent to MySQL')
+            #                 else:
+            #                     st.info('Record already exists, no changes made.')
+                            
+            #     except Error as e:
+            #         st.error(f'correct the error {str(e), e}')
                 
             
 
@@ -604,7 +729,7 @@ def main_menu():
     if selected == "Data Hub":
 
 
-        st.markdown("<h2 style='text-align:center; font-size: 38px; color: #BCFD4C ; font-weight: 500;font-family:Arial;'> Interactive Data Management Hub:</h2> ", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align:center; font-size: 38px; color: #BCFD4C ; font-weight: 500;font-family:Arial;'> Interactive Data Management Hub:</h2> ", unsafe_allow_html=True) 
         st.write(' ')
         st.write(' ')
         st.write(' ')
@@ -616,16 +741,17 @@ def main_menu():
         res = df_display.copy() if df_display is not None else st.write('')
         
         if df_display is None:
-            st.markdown(f""" <div style='text-align:left; font-size: 22px; color: #ffffff ;background-color: #3498db; height: 40px; padding: 5px;font-weight: 100;font-family:verdana;'>No records in the database.</div>""",unsafe_allow_html=True) 
+            st.markdown(f""" <div style='text-align:left; font-size: 22px; color: #ffffff ;background-color: transparent; height: 40px; padding: 5px;font-weight: 100;font-family:verdana;'>No records in the database.</div>""",unsafe_allow_html=True) 
         elif df_display.shape[0] > 1 :
+            word.markdown("<h4 style='text-align:left; font-size: 38px; color: #BCFD4C ; font-weight: 500;font-family:Arial;'>Explore Cardx DataFrame:</h4> ", unsafe_allow_html=True)
+            word.write('  ')
             create_data = {"Company Name": "text", 'Card Holder': 'multiselect'}
             all_wid = sp.create_widgets(df_display, create_data, ignore_columns=["ZipCode", "State", "City", "Address", "Designation", "Mobile Number", "Email", "Website"])
             res = sp.filter_df(df_display, all_wid)
         
         
             
-        word.markdown("<h4 style='text-align:left; font-size: 38px; color: #BCFD4C ; font-weight: 500;font-family:Arial;'>Explore Cardx DataFrame:</h4> ", unsafe_allow_html=True)
-        word.write('  ')
+        
         if isinstance(res, pd.DataFrame):
             st.dataframe(res, hide_index=True)
         else:
@@ -636,12 +762,13 @@ def main_menu():
         
 
         resu,mycur,mydb=sql_df()
-        card_name={row[1]:row[0] for row in resu} if resu is not None else st.write(' ')
+        card_id={row[1]:row[1] for row in resu} if resu is not None else st.write(' ')
+        
         
         if resu is not None and df_display is not None:
             st.markdown("<h4 style='text-align:left; font-size: 38px; color: #BCFD4C ; font-weight: 500;font-family:Arial;'>Edit, and Modify MySQL Database Records:</h4> ", unsafe_allow_html=True)
-            select_name=a.selectbox("Select Card Holder name to view data", list(card_name.values()), key=list(card_name.keys())) 
-            mycur.execute(f"select * from card_data where card_holder = '{select_name}'  ")
+            select_name=a.selectbox("Select id number to manage the data", list(card_id.keys()), key=list(card_id.values())) 
+            mycur.execute(f"select * from card_data where ID = '{select_name}'  ")
             resu1=mycur.fetchone()
             column_names = [desc[0] for desc in mycur.description]
             col1, col2,col3 = st.columns(3)
@@ -685,7 +812,7 @@ def main_menu():
                     state=%s,
                     pin_code=%s
                 WHERE
-                    card_holder=%s
+                    ID=%s
             """
       
         
@@ -703,7 +830,7 @@ def main_menu():
                     run_functions()
             if del_button:
                 try:
-                    mycur.execute(f""" Delete from card_data where card_holder ='{select_name}' """)
+                    mycur.execute(f""" Delete from card_data where ID ='{select_name}' """)
                     mydb.commit()
                     mycur.fetchall()
                     run_functions()
